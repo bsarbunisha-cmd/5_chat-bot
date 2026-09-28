@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI & Machine Learning StudyBot</title>
+<style>
+:root {
+  --a:#8b5cf6; --b:#22d3ee; --bg:#070a12;
+  --text:#edf2f7; --muted:#8c98aa; --line:rgba(255,255,255,.11);
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,system-ui,sans-serif;background:var(--bg)}
+button,textarea{font:inherit}
+textarea{outline:none}
+
+body{background:
+radial-gradient(circle at 15% 15%,rgba(139,92,246,.20),transparent 30%),
+radial-gradient(circle at 85% 80%,rgba(34,211,238,.13),transparent 28%),#050713}
+.app{width:min(1200px,94vw);height:min(900px,94vh);margin:3vh auto;display:grid;grid-template-columns:280px 1fr;border:1px solid var(--line);border-radius:28px;overflow:hidden;background:rgba(8,12,28,.82);backdrop-filter:blur(24px)}
+.side{padding:28px;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.logo{width:58px;height:58px;border-radius:19px;display:grid;place-items:center;font-size:28px;background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 15px 45px rgba(139,92,246,.25)}
+.tag{margin-top:22px;font-size:10px;letter-spacing:.22em;color:#9ba7bb}
+h1{font-size:20px;line-height:1.25;margin:8px 0 10px}
+.side p{color:var(--muted);font-size:13px;line-height:1.65}
+.pill{margin-top:18px;padding:13px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:11px;color:#b9c4d4}
+.foot{margin-top:auto;color:#657186;font-size:10px}
+.main{min-width:0;display:grid;grid-template-rows:72px 1fr auto}
+.top{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.online{font-size:11px;color:#86efac}
+.chat{overflow:auto;padding:30px}
+.hero{text-align:center;margin:12vh auto;max-width:620px}.hero .orb{margin:auto;width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff, var(--b) 18%,var(--a) 52%,transparent 70%);filter:drop-shadow(0 0 30px var(--a))}
+.hero h2{font-size:42px;letter-spacing:-.05em;margin:20px 0 8px}.hero p{color:var(--muted);line-height:1.7}
+.msg{display:flex;margin:0 auto 18px;max-width:790px}.msg.user{justify-content:flex-end}.bubble{max-width:80%;padding:14px 17px;border-radius:18px;line-height:1.65;font-size:14px;white-space:pre-wrap}.user .bubble{background:linear-gradient(135deg,var(--a),var(--b));}.model .bubble{background:rgba(255,255,255,.045);border:1px solid var(--line)}
+.compose{padding:16px 24px 22px;border-top:1px solid var(--line)}form{max-width:790px;margin:auto;display:flex;gap:8px;padding:8px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.04)}textarea{flex:1;resize:none;border:0;background:transparent;color:var(--text);padding:12px;min-height:48px;max-height:130px}button{border:0;width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,var(--a),var(--b));color:white;cursor:pointer}.hint{font-size:9px;color:#596579;text-align:center;margin-top:7px}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side"><div class="logo">✦</div><div class="tag">NEURAL LAB</div><h1>AI & Machine Learning StudyBot</h1><p>Learn artificial intelligence and machine learning through focused explanations, examples, and problem solving.</p><div class="pill">● STUDY MODE<br><br>Focused exclusively on AI / ML.</div><div class="foot">Gemini 3.1 Flash-Lite<br>Academic assistant</div></aside>
+<section class="main"><header class="top"><strong>Learning Space</strong><span class="online">● ONLINE</span></header><section class="chat" id="chat"><div class="hero" id="welcome"><div class="orb"></div><h2>Build your understanding.</h2><p>Ask a question about AI / ML. Get focused explanations, examples, and step-by-step help.</p></div></section><div class="compose"><form id="chat-form"><textarea id="message" placeholder="Ask a study question..." rows="1"></textarea><button id="send" type="submit">↑</button></form><div class="hint">Study-only assistant · Gemini-generated responses</div></div></section></div>
+<script>
+const form=document.getElementById("chat-form");
+const input=document.getElementById("message");
+const send=document.getElementById("send");
+const chat=document.getElementById("chat");
+const welcome=document.getElementById("welcome");
+const history=[];
+
+function addMessage(role,text){
+  if(welcome) welcome.remove();
+  const row=document.createElement("div");
+  row.className="msg "+role;
+  const bubble=document.createElement("div");
+  bubble.className="bubble";
+  bubble.textContent=text;
+  row.appendChild(bubble);
+  chat.appendChild(row);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+function loading(value){
+  send.disabled=value;
+  input.disabled=value;
+  send.textContent=value?"...":"↑";
+}
+
+async function sendMessage(){
+  const message=input.value.trim();
+  if(!message||send.disabled)return;
+  addMessage("user",message);
+  history.push({role:"user",text:message});
+  input.value="";
+  input.style.height="auto";
+  loading(true);
+
+  try{
+    const response=await fetch("/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message,history:history.slice(-10)})
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"Request failed.");
+    addMessage("model",data.answer);
+    history.push({role:"model",text:data.answer});
+  }catch(error){
+    addMessage("model",error.message||"Something went wrong.");
+  }finally{
+    loading(false);
+    input.focus();
+  }
+}
+
+form.addEventListener("submit",e=>{e.preventDefault();sendMessage();});
+input.addEventListener("input",()=>{
+  input.style.height="auto";
+  input.style.height=Math.min(input.scrollHeight,130)+"px";
+});
+input.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+</script>
+</body>
+</html>

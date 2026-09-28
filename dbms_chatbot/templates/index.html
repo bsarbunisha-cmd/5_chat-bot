@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DBMS StudyBot</title>
+<style>
+:root {
+  --a:#3b82f6; --b:#06b6d4; --bg:#070a12;
+  --text:#edf2f7; --muted:#8c98aa; --line:rgba(255,255,255,.11);
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,system-ui,sans-serif;background:var(--bg)}
+button,textarea{font:inherit}
+textarea{outline:none}
+
+body{background:#eef4fa;color:#0f172a}.app{width:min(1180px,94vw);height:min(900px,94vh);margin:3vh auto;display:grid;grid-template-columns:300px 1fr;border:1px solid #d7e0ea;border-radius:24px;overflow:hidden;background:#f8fafc;box-shadow:0 25px 70px rgba(15,23,42,.12)}
+.side{background:white;border-right:1px solid #dbe3eb;padding:28px;display:flex;flex-direction:column}.db-icon{width:58px;height:58px;border-radius:14px;background:linear-gradient(135deg,var(--a),var(--b));color:white;display:grid;place-items:center;font-size:28px}.tag{font-size:10px;letter-spacing:.18em;color:#64748b;margin-top:25px}.side h1{font-size:20px;margin:8px 0}.side p{color:#64748b;font-size:13px;line-height:1.65}.table-card{margin-top:20px;border:1px solid #dbe3eb;border-radius:14px;overflow:hidden}.row{padding:10px 12px;border-bottom:1px solid #e8eef4;font-size:11px;color:#64748b}.row:last-child{border:0}.row strong{color:#0f172a}.foot{margin-top:auto;font-size:10px;color:#94a3b8}
+.main{min-width:0;display:grid;grid-template-rows:72px 1fr auto}.top{background:white;border-bottom:1px solid #dbe3eb;padding:18px 25px;display:flex;justify-content:space-between;align-items:center}.top strong{font-size:13px}.badge{padding:6px 10px;border-radius:999px;background:#dcfce7;color:#166534;font-size:10px}.chat{overflow:auto;padding:30px}.hero{max-width:650px;margin:10vh auto;text-align:center}.hero h2{font-size:38px;letter-spacing:-.04em;margin:0 0 8px}.hero p{color:#64748b;line-height:1.7}.query{display:inline-block;margin-top:18px;padding:9px 13px;border:1px solid #dbe3eb;border-radius:9px;color:#64748b;font-size:11px;background:white}.msg{display:flex;max-width:800px;margin:0 auto 16px}.msg.user{justify-content:flex-end}.bubble{max-width:80%;padding:13px 16px;border-radius:15px;font-size:14px;line-height:1.65;white-space:pre-wrap}.user .bubble{background:#0f172a;color:white}.model .bubble{background:white;border:1px solid #dbe3eb;color:#334155}.compose{background:white;border-top:1px solid #dbe3eb;padding:15px 24px 21px}form{max-width:800px;margin:auto;display:flex;gap:8px;border:1px solid #cbd5e1;border-radius:14px;padding:7px;background:white}textarea{flex:1;border:0;resize:none;min-height:48px;color:#0f172a;padding:12px}button{width:48px;height:48px;border:0;border-radius:10px;background:linear-gradient(135deg,var(--a),var(--b));color:white;cursor:pointer}.hint{text-align:center;color:#94a3b8;font-size:9px;margin-top:7px}
+</style>
+</head>
+<body>
+<div class="app"><aside class="side"><div class="db-icon">▦</div><div class="tag">SCHEMA / STUDY</div><h1>DBMS StudyBot</h1><p>Study SQL, relational models, normalization, transactions, indexing, and database concepts.</p><div class="table-card"><div class="row"><strong>subject</strong><br>DBMS</div><div class="row"><strong>mode</strong><br>academic_only</div><div class="row"><strong>model</strong><br>gemini-3.1-flash-lite</div></div><div class="foot">Focused learning interface</div></aside><section class="main"><header class="top"><strong>Query Console</strong><span class="badge">CONNECTED</span></header><section class="chat" id="chat"><div class="hero" id="welcome"><div class="query">SELECT * FROM knowledge;</div><h2>Query your syllabus.</h2><p>Ask about SQL, normalization, transactions, indexing, or any other DBMS concept.</p></div></section><div class="compose"><form id="chat-form"><textarea id="message" placeholder="Enter a study query..." rows="1"></textarea><button id="send" type="submit">↵</button></form><div class="hint">Only DBMS study questions are supported.</div></div></section></div>
+<script>
+const form=document.getElementById("chat-form");
+const input=document.getElementById("message");
+const send=document.getElementById("send");
+const chat=document.getElementById("chat");
+const welcome=document.getElementById("welcome");
+const history=[];
+
+function addMessage(role,text){
+  if(welcome) welcome.remove();
+  const row=document.createElement("div");
+  row.className="msg "+role;
+  const bubble=document.createElement("div");
+  bubble.className="bubble";
+  bubble.textContent=text;
+  row.appendChild(bubble);
+  chat.appendChild(row);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+function loading(value){
+  send.disabled=value;
+  input.disabled=value;
+  send.textContent=value?"...":"↑";
+}
+
+async function sendMessage(){
+  const message=input.value.trim();
+  if(!message||send.disabled)return;
+  addMessage("user",message);
+  history.push({role:"user",text:message});
+  input.value="";
+  input.style.height="auto";
+  loading(true);
+
+  try{
+    const response=await fetch("/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message,history:history.slice(-10)})
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"Request failed.");
+    addMessage("model",data.answer);
+    history.push({role:"model",text:data.answer});
+  }catch(error){
+    addMessage("model",error.message||"Something went wrong.");
+  }finally{
+    loading(false);
+    input.focus();
+  }
+}
+
+form.addEventListener("submit",e=>{e.preventDefault();sendMessage();});
+input.addEventListener("input",()=>{
+  input.style.height="auto";
+  input.style.height=Math.min(input.scrollHeight,130)+"px";
+});
+input.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+</script>
+</body>
+</html>

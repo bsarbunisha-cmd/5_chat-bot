@@ -1,0 +1,60 @@
+services:
+  - type: web
+    name: ai-ml-studybot
+    runtime: python
+    plan: free
+    rootDir: ai_ml_chatbot
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: data-structures-studybot
+    runtime: python
+    plan: free
+    rootDir: data_structures_chatbot
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: dbms-studybot
+    runtime: python
+    plan: free
+    rootDir: dbms_chatbot
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: computer-networks-studybot
+    runtime: python
+    plan: free
+    rootDir: computer_networks_chatbot
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: operating-systems-studybot
+    runtime: python
+    plan: free
+    rootDir: operating_systems_chatbot
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
